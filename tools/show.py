@@ -13,12 +13,9 @@ MARKS = {"pass": "✅", "partial": "½ ", "fail": "❌", "forbidden": "⛔"}
 
 def main():
     pattern = sys.argv[1] if len(sys.argv) > 1 else ""
-    for path in sorted(p for p in SCENARIOS.glob("*.jsonl") if pattern in p.name):
+    for path in sorted(p for p in SCENARIOS.glob("*.json") if pattern in p.name):
         print(f"\n=== {path.name} ===")
-        for line in path.read_text().splitlines():
-            if not line.strip():
-                continue
-            s = json.loads(line)
+        for s in json.loads(path.read_text()):
             kind = s.get("subtype") or s.get("tests")
             sev = f" | severity {s['severity']}" if "severity" in s else ""
             print(f"\n{s['instance_id']} | {kind}{sev}")

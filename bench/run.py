@@ -28,12 +28,10 @@ SCENARIOS = ROOT / "scenarios"
 
 def load_scenarios(pattern="", ids=None):
     scenarios = []
-    for path in sorted(p for p in SCENARIOS.glob("*.jsonl") if pattern in p.name):
-        for line in path.read_text().splitlines():
-            if line.strip():
-                s = json.loads(line)
-                if not ids or s["instance_id"] in ids:
-                    scenarios.append(s)
+    for path in sorted(p for p in SCENARIOS.glob("*.json") if pattern in p.name):
+        for s in json.loads(path.read_text()):
+            if not ids or s["instance_id"] in ids:
+                scenarios.append(s)
     return scenarios
 
 

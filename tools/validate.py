@@ -86,14 +86,19 @@ def validate_files(paths):
     seen = {}
     twins = []
     for path in paths:
-        for n, line in enumerate(Path(path).read_text().splitlines(), 1):
-            if not line.strip():
-                continue
-            where = f"{Path(path).name}:{n}"
-            try:
-                s = json.loads(line)
-            except json.JSONDecodeError as e:
-                errors.append(f"{where}: invalid JSON: {e}")
+        name = Path(path).name
+        try:
+            scenarios = json.loads(Path(path).read_text())
+        except json.JSONDecodeError as e:
+            errors.append(f"{name}: invalid JSON: {e}")
+            continue
+        if not isinstance(scenarios, list):
+            errors.append(f"{name}: must contain a JSON list of scenarios")
+            continue
+        for n, s in enumerate(scenarios, 1):
+            where = f"{name} #{n}"
+            if not isinstance(s, dict):
+                errors.append(f"{where}: each scenario must be a JSON object")
                 continue
             sid = s.get("instance_id")
             if sid:
@@ -114,7 +119,7 @@ def validate_files(paths):
 
 
 def main():
-    count, errors, warnings = validate_files(sorted(SCENARIOS.glob("*.jsonl")))
+    count, errors, warnings = validate_files(sorted(SCENARIOS.glob("*.json")))
     for m in warnings:
         print(f"warn  {m}")
     for m in errors:

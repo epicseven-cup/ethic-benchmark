@@ -191,53 +191,56 @@ class ValidateFilesTest(unittest.TestCase):
 
     def write(self, name, *scenarios, raw=None):
         path = self.dir / name
-        lines = [json.dumps(s) for s in scenarios]
-        if raw is not None:
-            lines.append(raw)
-        path.write_text("\n".join(lines) + "\n")
+        path.write_text(raw if raw is not None else json.dumps(list(scenarios), indent=2))
         return path
 
-    def test_counts_scenarios_and_skips_blank_lines(self):
-        path = self.dir / "a.jsonl"
-        path.write_text(json.dumps(GOOD) + "\n\n" + json.dumps(TROLLEY) + "\n")
+    def test_counts_scenarios(self):
+        path = self.write("a.json", GOOD, TROLLEY)
         count, errors, warnings = validate_files([path])
         self.assertEqual(count, 2)
         self.assertEqual(errors, [])
         self.assertEqual(len(warnings), 1)
 
-    def test_invalid_json_reported_with_location(self):
-        path = self.write("bad.jsonl", GOOD, raw="{not json")
+    def test_invalid_json_reported_with_file(self):
+        path = self.write("bad.json", raw='[{"instance_id": "x",')
         _, errors, _ = validate_files([path])
         self.assertEqual(len(errors), 1)
-        self.assertIn("bad.jsonl:2", errors[0])
+        self.assertIn("bad.json", errors[0])
         self.assertIn("invalid JSON", errors[0])
 
+    def test_file_must_be_a_list_of_objects(self):
+        not_list = self.write("obj.json", raw=json.dumps(GOOD))
+        _, errors, _ = validate_files([not_list])
+        self.assertEqual(errors, ["obj.json: must contain a JSON list of scenarios"])
+        bad_item = self.write("item.json", raw=json.dumps([GOOD, "oops"]))
+        _, errors, _ = validate_files([bad_item])
+        self.assertEqual(errors, ["item.json #2: each scenario must be a JSON object"])
+
     def test_duplicate_ids_across_files(self):
-        a = self.write("a.jsonl", GOOD)
-        b = self.write("b.jsonl", GOOD)
+        a = self.write("a.json", GOOD)
+        b = self.write("b.json", GOOD)
         _, errors, _ = validate_files([a, b])
         self.assertEqual(len(errors), 1)
         self.assertIn("duplicate instance_id", errors[0])
-        self.assertIn("b.jsonl:1", errors[0])
+        self.assertIn("b.json #1", errors[0])
 
     def test_twin_link_must_exist(self):
         twin = variant(GOOD, instance_id="t-001-twin", twin_of="t-999")
-        path = self.write("a.jsonl", GOOD, twin)
+        path = self.write("a.json", GOOD, twin)
         _, errors, _ = validate_files([path])
         self.assertEqual(len(errors), 1)
         self.assertIn("twin_of 't-999' does not exist", errors[0])
 
     def test_twin_link_resolves_across_files(self):
-        a = self.write("a.jsonl", variant(GOOD, instance_id="t-001-twin", twin_of="t-001"))
-        b = self.write("b.jsonl", GOOD)
+        a = self.write("a.json", variant(GOOD, instance_id="t-001-twin", twin_of="t-001"))
+        b = self.write("b.json", GOOD)
         _, errors, _ = validate_files([a, b])
         self.assertEqual(errors, [])
 
-    def test_errors_include_file_line_and_id(self):
-        path = self.write("a.jsonl", variant(GOOD, severity=9))
+    def test_errors_include_file_position_and_id(self):
+        path = self.write("a.json", TROLLEY, variant(GOOD, severity=9))
         _, errors, _ = validate_files([path])
-        self.assertEqual(errors, ["a.jsonl:1 (t-001): severity must be 1-5"])
-
+        self.assertEqual(errors, ["a.json #2 (t-001): severity must be 1-5"])
 
 if __name__ == "__main__":
     unittest.main()

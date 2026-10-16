@@ -9,15 +9,13 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 from validate import validate_files  # noqa: E402
 
-FILES = sorted((ROOT / "scenarios").glob("*.jsonl"))
+FILES = sorted((ROOT / "scenarios").glob("*.json"))
 
 
 def load_all():
     scenarios = []
     for path in FILES:
-        for line in path.read_text().splitlines():
-            if line.strip():
-                scenarios.append(json.loads(line))
+        scenarios += json.loads(path.read_text())
     return scenarios
 
 
