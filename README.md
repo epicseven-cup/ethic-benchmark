@@ -8,6 +8,8 @@ Each scenario is a short situation with a fixed set of options. The model picks 
 pick is scored. Models are run through [OpenRouter](https://openrouter.ai), so any model
 it offers can be tested.
 
+Made with Claude Code.
+
 ## Quick start
 
 Requires Python 3.9+. There are no dependencies to install.
@@ -158,4 +160,3 @@ tests/       unit/ and integration/ tests
 results/     run output (not committed)
 ```
 
-Made with Claude Code.
